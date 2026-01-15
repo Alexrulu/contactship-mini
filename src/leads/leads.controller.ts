@@ -12,10 +12,16 @@ export class LeadsController {
   }
 
   @Post('/leads/:id/summarize')
-  async summarize(@Param('id') id: string) {
-  await this.leadsService.enqueueSummarize(id);
-  return { status: 'queued' };
-}
+    async summarize(@Param('id') id: string) {
+    await this.leadsService.enqueueSummarize(id);
+    return { status: 'queued' };
+  }
+
+  @Post('sync-external')
+    async triggerExternalSync() {
+    await this.leadsService.enqueueExternalSync();
+    return { status: 'queued' };
+  }
 
   @Get("leads")
   findAll() {
