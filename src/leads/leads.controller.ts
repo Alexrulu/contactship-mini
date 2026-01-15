@@ -11,6 +11,12 @@ export class LeadsController {
     return this.leadsService.create(dto);
   }
 
+  @Post('/leads/:id/summarize')
+  async summarize(@Param('id') id: string) {
+  await this.leadsService.enqueueSummarize(id);
+  return { status: 'queued' };
+}
+
   @Get("leads")
   findAll() {
     return this.leadsService.findAll();

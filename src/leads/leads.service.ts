@@ -2,12 +2,15 @@ import { Injectable, ConflictException } from "@nestjs/common";
 import { SupabaseService } from "../data/supabase.service";
 import { CreateLeadDto } from "./dto/create-lead.dto";
 import { RedisService } from "../cache/redis.service";
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
 
 @Injectable()
 export class LeadsService {
   constructor(
     private supabase: SupabaseService,
-    private redis: RedisService
+    private redis: RedisService,
+    @InjectQueue('leads') private leadsQueue: Queue
   ) {}
 
   async create(dto: CreateLeadDto) {
@@ -65,6 +68,14 @@ export class LeadsService {
     }
   
     return data;
+  }
+
+  async enqueueExternalSync() {
+    await this.leadsQueue.add('sync-external');
+  }
+
+  async enqueueSummarize(leadId: string) {
+    await this.leadsQueue.add('summarize', { leadId });
   }
 
 }
