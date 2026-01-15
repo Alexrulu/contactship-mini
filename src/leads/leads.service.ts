@@ -1,10 +1,14 @@
 import { Injectable, ConflictException } from "@nestjs/common";
 import { SupabaseService } from "../data/supabase.service";
 import { CreateLeadDto } from "./dto/create-lead.dto";
+import { RedisService } from "../cache/redis.service";
 
 @Injectable()
 export class LeadsService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private redis: RedisService
+  ) {}
 
   async create(dto: CreateLeadDto) {
     const { data, error } = await this.supabase.client
@@ -37,13 +41,30 @@ export class LeadsService {
   }
 
   async findById(id: string) {
+    const cacheKey = `lead:${id}`;
+  
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch {
+    }
+  
     const { data, error } = await this.supabase.client
       .from("leads")
       .select("*")
       .eq("id", id)
       .single();
-
+  
     if (error) throw error;
+  
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(data), 60);
+    } catch {
+    }
+  
     return data;
   }
+
 }
